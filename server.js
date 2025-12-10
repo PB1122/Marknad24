@@ -1,34 +1,43 @@
+const express = require('express');
+const fs = require('fs');
+const path = require('path');
+const bodyParser = require('body-parser');
 
-const express = require("express");
-const fs = require("fs");
-const bodyParser = require("body-parser");
 const app = express();
+const PORT = process.env.PORT || 3000;
 
-app.use(bodyParser.json());
-app.use(express.static("public"));
+// Middleware
+app.use(bodyParser.json({ limit: '10mb' }));
+app.use(bodyParser.urlencoded({ extended: true, limit: '10mb' }));
+app.use(express.static(path.join(__dirname, 'public')));
 
-// Hämta alla annonser
-app.get("/ads", (req, res) => {
-  fs.readFile("ads.json", (err, data) => {
-    if (err) return res.status(500).send("Error reading ads");
-    res.send(JSON.parse(data));
-  });
-});
+// Path till ads.json
+const adsFile = path.join(__dirname, 'api', 'ads.json');
 
-// Lägg till en annons
-app.post("/ads", (req, res) => {
-  fs.readFile("ads.json", (err, data) => {
-    if (err) return res.status(500).send("Error reading ads");
-    const ads = JSON.parse(data);
-    const newAd = { id: Date.now(), ...req.body, date: new Date().toLocaleString() };
-    ads.push(newAd);
-    fs.writeFile("ads.json", JSON.stringify(ads, null, 2), err => {
-      if (err) return res.status(500).send("Error saving ad");
-      res.send(newAd);
+// GET - hämta alla annonser
+app.get('/api/ads', (req, res) => {
+    fs.readFile(adsFile, 'utf8', (err, data) => {
+        if (err) return res.status(500).json({ error: 'Kunde inte läsa filen.' });
+        const ads = JSON.parse(data || '[]');
+        res.json(ads);
     });
-  });
 });
 
-const listener = app.listen(process.env.PORT || 3000, () => {
-  console.log("Server started on port " + listener.address().port);
+// POST - lägg till ny annons
+app.post('/api/ads', (req, res) => {
+    const newAd = req.body;
+
+    fs.readFile(adsFile, 'utf8', (err, data) => {
+        let ads = [];
+        if (!err) ads = JSON.parse(data || '[]');
+        ads.push(newAd);
+
+        fs.writeFile(adsFile, JSON.stringify(ads, null, 2), (err) => {
+            if (err) return res.status(500).json({ error: 'Kunde inte spara annonsen.' });
+            res.json({ success: true, ad: newAd });
+        });
+    });
 });
+
+// Starta server
+app.listen(PORT, () => console.log(`Server körs på port ${PORT}`));

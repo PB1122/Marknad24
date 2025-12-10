@@ -83,6 +83,21 @@ main { padding:20px; max-width:1200px; margin:0 auto; }
 
 <section id="ads">
 <h2>Alla annonser</h2>
+<div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:10px;">
+    <select id="filter-category">
+        <option value="">Alla kategorier</option>
+        <option value="elektronik">Elektronik</option>
+        <option value="kläder">Kläder</option>
+        <option value="möbler">Möbler</option>
+        <option value="övrigt">Övrigt</option>
+    </select>
+    <select id="sort-ads">
+        <option value="newest">Nyast först</option>
+        <option value="oldest">Äldst först</option>
+        <option value="price-asc">Pris stigande</option>
+        <option value="price-desc">Pris fallande</option>
+    </select>
+</div>
 <div id="ad-list"></div>
 </section>
 </main>
@@ -108,38 +123,89 @@ main { padding:20px; max-width:1200px; margin:0 auto; }
 </div>
 
 <script>
-// Dummy ads-data om man inte har backend
+// DATA & BACKEND
 let ads = [];
 
-// Scroll-knappar
-document.getElementById('nav-home').addEventListener('click', ()=>{ document.getElementById('start-page').scrollIntoView({behavior:'smooth'}); });
-document.getElementById('nav-ads').addEventListener('click', ()=>{ document.getElementById('ads').scrollIntoView({behavior:'smooth'}); });
-document.getElementById('show-add-btn').addEventListener('click', ()=>{
-    const form = document.getElementById('add-ad');
-    form.style.display = form.style.display==='block' ? 'none' : 'block';
-    if(form.style.display==='block') form.scrollIntoView({behavior:'smooth'});
+// Visa "lägg till annons"-form
+document.getElementById('show-add-btn').addEventListener('click', ()=> {
+    document.getElementById('add-ad').style.display='block';
+    document.getElementById('add-ad').scrollIntoView({behavior:"smooth"});
 });
 
-// Render ads
+// Scrolla till annonser
+document.getElementById('nav-ads').addEventListener('click', ()=> {
+    document.getElementById('ads').scrollIntoView({behavior:'smooth'});
+});
+
+// RENDER ADS
 function renderAds(){
     const adList = document.getElementById('ad-list');
-    adList.innerHTML = ads.map((ad,index)=>`
-        <div class="ad-card">
-            ${ad.image ? `<img src="${ad.image}" alt="${ad.title}">` : '<div style="height:150px;background:#eee;display:flex;align-items:center;justify-content:center;">Ingen bild</div>'}
-            <h3>${ad.title}</h3>
-            <p>${ad.description}</p>
-            <p>Pris: ${ad.price} SEK</p>
-            <p>Kategori: ${ad.category}</p>
-            <p>Skick: ${ad.condition}</p>
-            <p class="meta-small">Upplagd: ${ad.date}</p>
-        </div>
+    let filteredAds = [...ads];
+
+    // Filter kategori
+    const selectedCategory = document.getElementById('filter-category')?.value || '';
+    if(selectedCategory) filteredAds = filteredAds.filter(ad=>ad.category===selectedCategory);
+
+    // Sortering
+    const sortValue = document.getElementById('sort-ads')?.value || 'newest';
+    filteredAds.sort((a,b)=> {
+        if(sortValue==='newest') return new Date(b.date)-new Date(a.date);
+        if(sortValue==='oldest') return new Date(a.date)-new Date(b.date);
+        if(sortValue==='price-asc') return Number(a.price)-Number(b.price);
+        if(sortValue==='price-desc') return Number(b.price)-Number(a.price);
+    });
+
+    adList.innerHTML = filteredAds.map((ad,index)=>`
+    <div class="ad-card" data-id="${ad.id}">
+        ${ad.image ? `<img src="${ad.image}" alt="${ad.title}">` : '<div style="height:150px;background:#eee;display:flex;align-items:center;justify-content:center;">Ingen bild</div>'}
+        <h3>${ad.title}</h3>
+        <p>${ad.description}</p>
+        <p>Pris: ${ad.price} SEK</p>
+        <p>Kategori: ${ad.category}</p>
+        <p>Skick: ${ad.condition}</p>
+        <p class="meta-small">Upplagd: ${ad.date}</p>
+    </div>
     `).join('');
+
+    // Klickbar annons (modal)
+    document.querySelectorAll('.ad-card').forEach((card,index)=> {
+        card.addEventListener('click',()=> {
+            const ad = filteredAds[index];
+            document.getElementById('modal-title').innerText = ad.title;
+            document.getElementById('modal-description').innerText = ad.description;
+            document.getElementById('modal-price').innerText = ad.price;
+            document.getElementById('modal-category').innerText = ad.category;
+            document.getElementById('modal-condition').innerText = ad.condition;
+            document.getElementById('modal-date').innerText = ad.date;
+            document.getElementById('modal-seller-email').innerText = ad.sellerEmail;
+            if(ad.image){ document.getElementById('modal-image').src=ad.image; document.getElementById('modal-image').style.display='block'; }
+            else document.getElementById('modal-image').style.display='none';
+            document.getElementById('modal-overlay').style.display='flex';
+        });
+    });
 }
 
-// Lägg till annons
-document.getElementById('ad-form').addEventListener('submit', function(e){
+// Stäng modal
+document.getElementById('modal-close').addEventListener('click', ()=> {
+    document.getElementById('modal-overlay').style.display='none';
+});
+
+// Hämta annonser från backend
+async function fetchAds(){
+    try{
+        const res = await fetch('/api/ads');
+        ads = await res.json();
+        renderAds();
+    }catch(e){
+        console.error('Kunde inte hämta annonser:', e);
+    }
+}
+
+// POST ny annons
+document.getElementById('ad-form').addEventListener('submit', async function(e){
     e.preventDefault();
     const newAd = {
+        id: 'ad_'+Date.now(),
         title: document.getElementById('title').value,
         description: document.getElementById('description').value,
         price: document.getElementById('price').value,
@@ -152,22 +218,39 @@ document.getElementById('ad-form').addEventListener('submit', function(e){
     const imageInput = document.getElementById('image');
     if(imageInput.files && imageInput.files[0]){
         const reader = new FileReader();
-        reader.onload = function(e){
+        reader.onload = async function(e){
             newAd.image = e.target.result;
-            ads.push(newAd);
-            renderAds();
-            document.getElementById('ad-form').reset();
+            await postAd(newAd);
         };
         reader.readAsDataURL(imageInput.files[0]);
-    } else {
-        ads.push(newAd);
-        renderAds();
-        document.getElementById('ad-form').reset();
+    }else{
+        await postAd(newAd);
     }
+    document.getElementById('ad-form').reset();
 });
 
-// Initial render
-renderAds();
+async function postAd(ad){
+    try{
+        const res = await fetch('/api/ads', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(ad)
+        });
+        const data = await res.json();
+        if(data.success){
+            fetchAds();
+        }
+    }catch(e){
+        console.error('Kunde inte skicka annons:', e);
+    }
+}
+
+// Filter & sort
+document.getElementById('filter-category').addEventListener('change', fetchAds);
+document.getElementById('sort-ads').addEventListener('change', fetchAds);
+
+// Initial load
+fetchAds();
 </script>
 </body>
 </html>
