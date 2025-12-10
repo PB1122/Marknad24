@@ -75,7 +75,6 @@ main { padding:20px; max-width:1200px; margin:0 auto; }
 <option value="Okej skick">Okej skick</option>
 <option value="Använt skick">Använt skick</option>
 </select>
-<input type="file" id="image" accept="image/*">
 <input type="email" id="seller-email" placeholder="Din email" required>
 <button type="submit">Lägg upp</button>
 </form>
@@ -123,134 +122,59 @@ main { padding:20px; max-width:1200px; margin:0 auto; }
 </div>
 
 <script>
-// DATA & BACKEND
-let ads = [];
+// Rendera annonser från backend
+function renderAds() {
+    fetch('/api/ads')
+    .then(res => res.json())
+    .then(ads => {
+        const adList = document.getElementById('ad-list');
+        adList.innerHTML = ads.map((ad, index)=>`
+        <div class="ad-card" data-id="${ad.id || index}">
+            <h3>${ad.title}</h3>
+            <p>${ad.description}</p>
+            <p>Pris: ${ad.price} SEK</p>
+            <p>Kategori: ${ad.category}</p>
+            <p>Skick: ${ad.condition}</p>
+            <p class="meta-small">Upplagd: ${ad.date}</p>
+        </div>`).join('');
+    });
+}
 
-// Visa "lägg till annons"-form
+// Visa formulär för ny annons
 document.getElementById('show-add-btn').addEventListener('click', ()=> {
     document.getElementById('add-ad').style.display='block';
-    document.getElementById('add-ad').scrollIntoView({behavior:"smooth"});
 });
 
-// Scrolla till annonser
-document.getElementById('nav-ads').addEventListener('click', ()=> {
-    document.getElementById('ads').scrollIntoView({behavior:'smooth'});
-});
-
-// RENDER ADS
-function renderAds(){
-    const adList = document.getElementById('ad-list');
-    let filteredAds = [...ads];
-
-    // Filter kategori
-    const selectedCategory = document.getElementById('filter-category')?.value || '';
-    if(selectedCategory) filteredAds = filteredAds.filter(ad=>ad.category===selectedCategory);
-
-    // Sortering
-    const sortValue = document.getElementById('sort-ads')?.value || 'newest';
-    filteredAds.sort((a,b)=> {
-        if(sortValue==='newest') return new Date(b.date)-new Date(a.date);
-        if(sortValue==='oldest') return new Date(a.date)-new Date(b.date);
-        if(sortValue==='price-asc') return Number(a.price)-Number(b.price);
-        if(sortValue==='price-desc') return Number(b.price)-Number(a.price);
-    });
-
-    adList.innerHTML = filteredAds.map((ad,index)=>`
-    <div class="ad-card" data-id="${ad.id}">
-        ${ad.image ? `<img src="${ad.image}" alt="${ad.title}">` : '<div style="height:150px;background:#eee;display:flex;align-items:center;justify-content:center;">Ingen bild</div>'}
-        <h3>${ad.title}</h3>
-        <p>${ad.description}</p>
-        <p>Pris: ${ad.price} SEK</p>
-        <p>Kategori: ${ad.category}</p>
-        <p>Skick: ${ad.condition}</p>
-        <p class="meta-small">Upplagd: ${ad.date}</p>
-    </div>
-    `).join('');
-
-    // Klickbar annons (modal)
-    document.querySelectorAll('.ad-card').forEach((card,index)=> {
-        card.addEventListener('click',()=> {
-            const ad = filteredAds[index];
-            document.getElementById('modal-title').innerText = ad.title;
-            document.getElementById('modal-description').innerText = ad.description;
-            document.getElementById('modal-price').innerText = ad.price;
-            document.getElementById('modal-category').innerText = ad.category;
-            document.getElementById('modal-condition').innerText = ad.condition;
-            document.getElementById('modal-date').innerText = ad.date;
-            document.getElementById('modal-seller-email').innerText = ad.sellerEmail;
-            if(ad.image){ document.getElementById('modal-image').src=ad.image; document.getElementById('modal-image').style.display='block'; }
-            else document.getElementById('modal-image').style.display='none';
-            document.getElementById('modal-overlay').style.display='flex';
-        });
-    });
-}
-
-// Stäng modal
-document.getElementById('modal-close').addEventListener('click', ()=> {
-    document.getElementById('modal-overlay').style.display='none';
-});
-
-// Hämta annonser från backend
-async function fetchAds(){
-    try{
-        const res = await fetch('/api/ads');
-        ads = await res.json();
-        renderAds();
-    }catch(e){
-        console.error('Kunde inte hämta annonser:', e);
-    }
-}
-
-// POST ny annons
-document.getElementById('ad-form').addEventListener('submit', async function(e){
+// Lägg till ny annons
+document.getElementById('ad-form').addEventListener('submit', e=>{
     e.preventDefault();
     const newAd = {
-        id: 'ad_'+Date.now(),
         title: document.getElementById('title').value,
         description: document.getElementById('description').value,
         price: document.getElementById('price').value,
         category: document.getElementById('category').value,
         condition: document.getElementById('condition').value,
         sellerEmail: document.getElementById('seller-email').value,
-        date: new Date().toLocaleString(),
-        image: null
+        date: new Date().toLocaleString()
     };
-    const imageInput = document.getElementById('image');
-    if(imageInput.files && imageInput.files[0]){
-        const reader = new FileReader();
-        reader.onload = async function(e){
-            newAd.image = e.target.result;
-            await postAd(newAd);
-        };
-        reader.readAsDataURL(imageInput.files[0]);
-    }else{
-        await postAd(newAd);
-    }
-    document.getElementById('ad-form').reset();
+    fetch('/api/ads', {
+        method: 'POST',
+        headers:{ 'Content-Type':'application/json' },
+        body: JSON.stringify(newAd)
+    })
+    .then(res => res.json())
+    .then(data=>{
+        renderAds();
+        document.getElementById('ad-form').reset();
+    });
 });
 
-async function postAd(ad){
-    try{
-        const res = await fetch('/api/ads', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(ad)
-        });
-        const data = await res.json();
-        if(data.success){
-            fetchAds();
-        }
-    }catch(e){
-        console.error('Kunde inte skicka annons:', e);
-    }
-}
+// Scroll till annonser
+document.getElementById('nav-ads').addEventListener('click', ()=>document.getElementById('ads').scrollIntoView({behavior:'smooth'}));
+document.getElementById('nav-home').addEventListener('click', ()=>document.getElementById('start-page').scrollIntoView({behavior:'smooth'}));
 
-// Filter & sort
-document.getElementById('filter-category').addEventListener('change', fetchAds);
-document.getElementById('sort-ads').addEventListener('change', fetchAds);
-
-// Initial load
-fetchAds();
+// Initial render
+renderAds();
 </script>
 </body>
 </html>
