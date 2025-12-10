@@ -1,32 +1,18 @@
-import fs from 'fs';
-import path from 'path';
+import { readFile, writeFile } from 'fs/promises';
 
-const filePath = path.join(process.cwd(), 'api', 'ads.json');
+export default async function handler(req, res) {
+  const path = './annonser.json';
 
-export default function handler(req, res) {
-  let ads = [];
-
-  // Läs JSON-fil
-  try {
-    const data = fs.readFileSync(filePath, 'utf8');
-    ads = JSON.parse(data);
-  } catch (e) {
-    ads = [];
-  }
-
-  if (req.method === "GET") {
-    res.status(200).json(ads);
-  } else if (req.method === "POST") {
-    const newAd = req.body;
-    newAd.id = "ad_" + Date.now();
-    newAd.date = new Date().toLocaleString();
-    ads.push(newAd);
-
-    // Skriv tillbaka till fil
-    fs.writeFileSync(filePath, JSON.stringify(ads, null, 2));
-
-    res.status(200).json(newAd);
+  if (req.method === 'GET') {
+    const data = await readFile(path, 'utf-8');
+    res.status(200).json(JSON.parse(data));
+  } else if (req.method === 'POST') {
+    const ad = req.body;
+    const ads = JSON.parse(await readFile(path, 'utf-8'));
+    ads.push(ad);
+    await writeFile(path, JSON.stringify(ads, null, 2));
+    res.status(201).json(ad);
   } else {
-    res.status(405).end();
+    res.status(405).send('Method Not Allowed');
   }
 }
