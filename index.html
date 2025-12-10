@@ -4,265 +4,48 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Marknad24</title>
-<style>
-body { font-family: Arial, sans-serif; margin:0; padding:0; background:#f4f4f4; line-height:1.6; }
-header { background:#333; color:#fff; padding:1rem; text-align:center; }
-nav { margin-top:8px; }
-nav button, nav a { background:transparent; color:#fff; border:1px solid rgba(255,255,255,0.15); padding:8px 12px; border-radius:6px; cursor:pointer; margin:0 6px; text-decoration:none; }
-nav button:hover, nav a:hover { opacity:0.9; }
-main { padding:20px; max-width:1200px; margin:0 auto; }
-#start-page { text-align:center; background:#fff; padding:60px 20px; border-radius:10px; box-shadow:0 0 15px rgba(0,0,0,0.2); margin-bottom:20px; }
-#start-page h1 { font-size:48px; font-weight:bold; margin-bottom:20px; color:#007bff; }
-#start-page p { font-size:20px; margin-bottom:30px; }
-#show-add-btn { background:#007bff; color:white; padding:15px 40px; border:none; border-radius:8px; cursor:pointer; font-size:20px; margin-bottom:20px; }
-#show-add-btn:hover { background:#0062cc; }
-#ad-form, #ads { background:#fff; padding:20px; border-radius:5px; box-shadow:0 0 10px rgba(0,0,0,0.1); margin-bottom:20px; }
-#ad-form input,#ad-form textarea,#ad-form select,#ad-form button { width:100%; padding:10px; margin-bottom:10px; border:1px solid #ddd; border-radius:4px; }
-#ad-form button { background:#333; color:#fff; border:none; cursor:pointer; }
-#ad-form button:hover { background:#555; }
-#ad-list { display:grid; grid-template-columns:repeat(auto-fill,minmax(250px,1fr)); gap:20px; margin-top:20px; }
-.ad-card { border:1px solid #ddd; padding:10px; border-radius:4px; background:#f9f9f9; cursor:pointer; transition: transform .08s ease; position:relative; }
-.ad-card:hover { transform:translateY(-3px); }
-.ad-card img { max-width:100%; height:auto; border-radius:4px; }
-.meta-small { font-size:12px; color:#666; margin-top:6px; }
-.remove-btn { position:absolute; top:5px; right:5px; background:#ff4d4d; color:white; border:none; border-radius:4px; padding:2px 6px; cursor:pointer; font-size:12px; }
-
-/* Modal */
-.modal-overlay { position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); display:none; align-items:flex-start; justify-content:center; padding:20px; z-index:9999; overflow-y:auto; }
-.modal { background:white; width:100%; max-width:900px; border-radius:8px; margin:40px 0; box-shadow:0 10px 30px rgba(0,0,0,0.3); position:relative; overflow:hidden; }
-.modal .modal-header { display:flex; justify-content:space-between; align-items:center; padding:12px 16px; border-bottom:1px solid #eee; }
-.modal .modal-body { padding:16px; display:block; }
-.modal img.modal-image { width:100%; height:auto; border-radius:4px; display:block; margin-bottom:12px; }
-.modal .close-btn { background:transparent; border:none; font-size:20px; cursor:pointer; }
-</style>
 </head>
 <body>
-<header>
 <h1>Marknad24</h1>
-<nav>
-<button id="nav-home">Startsida</button>
-<button id="nav-ads">Publicerade annonser</button>
-<a href="login.html">Logga in</a>
-<button id="show-add-btn">Lägg till annons</button>
-</nav>
-</header>
 
-<main>
-<section id="start-page">
-<h1>Marknad24</h1>
-<p>Välkommen till Marknad24! Här kan du köpa och sälja saker inom ditt närområde.</p>
-<p id="total-ads">Totalt antal annonser: 0</p>
-</section>
-
-<section id="add-ad" style="display:none;">
-<h2>Lägg till annons</h2>
 <form id="ad-form">
-<input type="text" id="title" placeholder="Titel" required>
-<textarea id="description" placeholder="Beskrivning" required></textarea>
-<input type="number" id="price" placeholder="Pris (SEK)" required>
-<select id="category" required>
-<option value="">Välj kategori</option>
-<option value="elektronik">Elektronik</option>
-<option value="kläder">Kläder</option>
-<option value="möbler">Möbler</option>
-<option value="övrigt">Övrigt</option>
-</select>
-<select id="condition" required>
-<option value="">Välj skick</option>
-<option value="Ny">Ny</option>
-<option value="Som ny">Som ny</option>
-<option value="Bra skick">Bra skick</option>
-<option value="Okej skick">Okej skick</option>
-<option value="Använt skick">Använt skick</option>
-</select>
-<input type="file" id="image" accept="image/*">
-<input type="email" id="seller-email" placeholder="Din email" required>
-<button type="submit">Lägg upp</button>
+  <input type="text" id="title" placeholder="Titel" required>
+  <textarea id="description" placeholder="Beskrivning" required></textarea>
+  <input type="number" id="price" placeholder="Pris (SEK)" required>
+  <button type="submit">Lägg upp</button>
 </form>
-</section>
 
-<section id="ads">
-<h2>Alla annonser</h2>
-<div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:10px;">
-    <select id="filter-category">
-        <option value="">Alla kategorier</option>
-        <option value="elektronik">Elektronik</option>
-        <option value="kläder">Kläder</option>
-        <option value="möbler">Möbler</option>
-        <option value="övrigt">Övrigt</option>
-    </select>
-    <select id="sort-ads">
-        <option value="newest">Nyast först</option>
-        <option value="oldest">Äldst först</option>
-        <option value="price-asc">Pris stigande</option>
-        <option value="price-desc">Pris fallande</option>
-    </select>
-</div>
-<div id="ad-list"></div>
-</section>
-</main>
-
-<!-- Modal -->
-<div class="modal-overlay" id="modal-overlay">
-<div class="modal">
-<div class="modal-header">
-<h3 id="modal-title"></h3>
-<button class="close-btn" id="modal-close">&times;</button>
-</div>
-<div class="modal-body">
-<img id="modal-image" class="modal-image" src="">
-<p>Pris: <span id="modal-price"></span> SEK</p>
-<p>Kategori: <span id="modal-category"></span></p>
-<p>Skick: <span id="modal-condition"></span></p>
-<p>Upplagd: <span id="modal-date"></span></p>
-<p id="modal-description"></p>
-<p>Säljarens email: <span id="modal-seller-email"></span></p>
-<button class="remove-btn" id="remove-ad-btn" style="display:none;">Ta bort annons</button>
-</div>
-</div>
-</div>
+<div id="ads-list"></div>
 
 <script>
-let ads = [];
-let loggedInUserId = null; // hantera inloggning senare
-let isAdmin = false;
-
-const filterCategory = document.getElementById('filter-category');
-const sortAds = document.getElementById('sort-ads');
-const totalAdsElem = document.getElementById('total-ads');
-
-async function fetchAds() {
-    const res = await fetch("/api/ads");
-    ads = await res.json();
-    renderAds();
+async function loadAds() {
+  const res = await fetch('/api/ad');
+  const ads = await res.json();
+  const container = document.getElementById('ads-list');
+  container.innerHTML = ads.map(a=>`<div><h3>${a.title}</h3><p>${a.description}</p><p>${a.price} SEK</p></div>`).join('');
 }
 
-function renderAds(){
-    const adList = document.getElementById('ad-list');
-    let filteredAds = [...ads];
-
-    const selectedCategory = filterCategory.value;
-    if(selectedCategory) filteredAds = filteredAds.filter(ad => ad.category === selectedCategory);
-
-    const sortValue = sortAds.value;
-    filteredAds.sort((a,b)=>{
-        if(sortValue==='newest') return new Date(b.date)-new Date(a.date);
-        if(sortValue==='oldest') return new Date(a.date)-new Date(b.date);
-        if(sortValue==='price-asc') return Number(a.price)-Number(b.price);
-        if(sortValue==='price-desc') return Number(b.price)-Number(a.price);
-    });
-
-    adList.innerHTML = filteredAds.map((ad,index)=>`
-    <div class="ad-card" data-id="${ad.id}">
-        ${ad.image ? `<img src="${ad.image}" alt="${ad.title}">` : '<div style="height:150px;background:#eee;display:flex;align-items:center;justify-content:center;">Ingen bild</div>'}
-        <h3>${ad.title}</h3>
-        <p>${ad.description}</p>
-        <p>Pris: ${ad.price} SEK</p>
-        <p>Kategori: ${ad.category}</p>
-        <p>Skick: ${ad.condition}</p>
-        <p class="meta-small">Upplagd: ${ad.date}</p>
-    </div>
-    `).join('');
-
-    totalAdsElem.innerText = `Totalt antal annonser: ${ads.length}`;
-
-    // Klicka på kort för modal
-    document.querySelectorAll('.ad-card').forEach((card,index)=>{
-        card.addEventListener('click',()=>{
-            const ad = filteredAds[index];
-            document.getElementById('modal-title').innerText = ad.title;
-            document.getElementById('modal-description').innerText = ad.description;
-            document.getElementById('modal-price').innerText = ad.price;
-            document.getElementById('modal-category').innerText = ad.category;
-            document.getElementById('modal-condition').innerText = ad.condition;
-            document.getElementById('modal-date').innerText = ad.date;
-            document.getElementById('modal-seller-email').innerText = ad.sellerEmail;
-            if(ad.image){ document.getElementById('modal-image').src=ad.image; document.getElementById('modal-image').style.display='block'; }
-            else document.getElementById('modal-image').style.display='none';
-
-            const removeBtn = document.getElementById('remove-ad-btn');
-            if(isAdmin){
-                removeBtn.style.display='inline-block';
-                removeBtn.onclick = async function(){
-                    await fetch(`/api/ads`, {
-                        method:"POST",
-                        body: JSON.stringify({id:ad.id, delete:true}),
-                        headers: {"Content-Type":"application/json"}
-                    });
-                    fetchAds();
-                    document.getElementById('modal-overlay').style.display='none';
-                }
-            } else {
-                removeBtn.style.display='none';
-            }
-
-            document.getElementById('modal-overlay').style.display='flex';
-        });
-    });
-}
-
-// Stäng modal
-document.getElementById('modal-close').addEventListener('click', ()=>{
-    document.getElementById('modal-overlay').style.display='none';
+document.getElementById('ad-form').addEventListener('submit', async e=>{
+  e.preventDefault();
+  const ad = {
+    title: document.getElementById('title').value,
+    description: document.getElementById('description').value,
+    price: document.getElementById('price').value
+  };
+  await fetch('/api/ad', {
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify(ad)
+  });
+  document.getElementById('ad-form').reset();
+  loadAds();
 });
 
-// Lägg till annons
-document.getElementById('ad-form').addEventListener('submit', async function(e){
-    e.preventDefault();
-    const title = document.getElementById('title').value;
-    const description = document.getElementById('description').value;
-    const price = document.getElementById('price').value;
-    const category = document.getElementById('category').value;
-    const condition = document.getElementById('condition').value;
-    const imageInput = document.getElementById('image');
-    const sellerEmail = document.getElementById('seller-email').value;
-
-    const newAd = { title, description, price, category, condition, sellerEmail, image:null };
-
-    if(imageInput.files && imageInput.files[0]){
-        const reader = new FileReader();
-        reader.onload = async function(e){
-            newAd.image = e.target.result;
-            await fetch("/api/ads", {
-                method:"POST",
-                body: JSON.stringify(newAd),
-                headers: {"Content-Type":"application/json"}
-            });
-            fetchAds();
-            document.getElementById('ad-form').reset();
-        };
-        reader.readAsDataURL(imageInput.files[0]);
-    } else {
-        await fetch("/api/ads", {
-            method:"POST",
-            body: JSON.stringify(newAd),
-            headers: {"Content-Type":"application/json"}
-        });
-        fetchAds();
-        document.getElementById('ad-form').reset();
-    }
-});
-
-// Visa "lägg till annons"
-document.getElementById('show-add-btn').addEventListener('click', ()=>{
-    document.getElementById('add-ad').style.display='block';
-    document.getElementById('add-ad').scrollIntoView({behavior:"smooth"});
-});
-
-// Scrolla till annonser
-document.getElementById('nav-ads').addEventListener('click', ()=>{
-    document.getElementById('ads').scrollIntoView({behavior:'smooth'});
-});
-
-// Filter & sort
-filterCategory.addEventListener('change', fetchAds);
-sortAds.addEventListener('change', fetchAds);
-
-// Initial load
-fetchAds();
+loadAds();
 </script>
 </body>
 </html>
+
 
 
 
