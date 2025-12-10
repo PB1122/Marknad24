@@ -26,14 +26,6 @@ main { padding:20px; max-width:1200px; margin:0 auto; }
 .ad-card img { max-width:100%; height:auto; border-radius:4px; }
 .meta-small { font-size:12px; color:#666; margin-top:6px; }
 .remove-btn { position:absolute; top:5px; right:5px; background:#ff4d4d; color:white; border:none; border-radius:4px; padding:2px 6px; cursor:pointer; font-size:12px; }
-
-/* Modal */
-.modal-overlay { position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); display:none; align-items:flex-start; justify-content:center; padding:20px; z-index:9999; overflow-y:auto; }
-.modal { background:white; width:100%; max-width:900px; border-radius:8px; margin:40px 0; box-shadow:0 10px 30px rgba(0,0,0,0.3); position:relative; overflow:hidden; }
-.modal .modal-header { display:flex; justify-content:space-between; align-items:center; padding:12px 16px; border-bottom:1px solid #eee; }
-.modal .modal-body { padding:16px; display:block; }
-.modal img.modal-image { width:100%; height:auto; border-radius:4px; display:block; margin-bottom:12px; }
-.modal .close-btn { background:transparent; border:none; font-size:20px; cursor:pointer; }
 </style>
 </head>
 <body>
@@ -43,6 +35,8 @@ main { padding:20px; max-width:1200px; margin:0 auto; }
 <button id="nav-home">Startsida</button>
 <button id="nav-ads">Publicerade annonser</button>
 <button id="show-add-btn">Lägg till annons</button>
+<a href="login.html">Logga in</a>
+<a href="register.html">Registrera</a>
 </nav>
 </header>
 
@@ -73,6 +67,7 @@ main { padding:20px; max-width:1200px; margin:0 auto; }
 <option value="Okej skick">Okej skick</option>
 <option value="Använt skick">Använt skick</option>
 </select>
+<input type="file" id="image" accept="image/*">
 <input type="email" id="seller-email" placeholder="Din email" required>
 <button type="submit">Lägg upp</button>
 </form>
@@ -80,33 +75,26 @@ main { padding:20px; max-width:1200px; margin:0 auto; }
 
 <section id="ads">
 <h2>Alla annonser</h2>
+<div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:10px;">
+    <select id="filter-category">
+        <option value="">Alla kategorier</option>
+        <option value="elektronik">Elektronik</option>
+        <option value="kläder">Kläder</option>
+        <option value="möbler">Möbler</option>
+        <option value="övrigt">Övrigt</option>
+    </select>
+    <select id="sort-ads">
+        <option value="newest">Nyast först</option>
+        <option value="oldest">Äldst först</option>
+        <option value="price-asc">Pris stigande</option>
+        <option value="price-desc">Pris fallande</option>
+    </select>
+</div>
 <div id="ad-list"></div>
 </section>
 </main>
 
-<!-- Modal -->
-<div class="modal-overlay" id="modal-overlay">
-<div class="modal">
-<div class="modal-header">
-<h3 id="modal-title"></h3>
-<button class="close-btn" id="modal-close">&times;</button>
-</div>
-<div class="modal-body">
-<img id="modal-image" class="modal-image" src="">
-<p>Pris: <span id="modal-price"></span> SEK</p>
-<p>Kategori: <span id="modal-category"></span></p>
-<p>Skick: <span id="modal-condition"></span></p>
-<p>Upplagd: <span id="modal-date"></span></p>
-<p id="modal-description"></p>
-<p>Säljarens email: <span id="modal-seller-email"></span></p>
-</div>
-</div>
-</div>
-
 <script>
-// LOGIC
-let loggedInUser = true; // simulerar inloggning
-
 // Visa "lägg till annons"-form
 document.getElementById('show-add-btn').addEventListener('click', ()=>{
     document.getElementById('add-ad').style.display='block';
@@ -117,82 +105,10 @@ document.getElementById('show-add-btn').addEventListener('click', ()=>{
 document.getElementById('nav-ads').addEventListener('click', ()=>{
     document.getElementById('ads').scrollIntoView({behavior:'smooth'});
 });
-
-// Hämta annonser
-async function fetchAds(){
-    const res = await fetch('/api/ad');
-    const ads = await res.json();
-    renderAds(ads);
-}
-
-// Render-funktion
-function renderAds(ads){
-    const adList = document.getElementById('ad-list');
-    adList.innerHTML = ads.map(ad=>`
-    <div class="ad-card" data-id="${ad.id}">
-        ${ad.image ? `<img src="${ad.image}" alt="${ad.title}">` : '<div style="height:150px;background:#eee;display:flex;align-items:center;justify-content:center;">Ingen bild</div>'}
-        <h3>${ad.title}</h3>
-        <p>${ad.description}</p>
-        <p>Pris: ${ad.price} SEK</p>
-        <p>Kategori: ${ad.category}</p>
-        <p>Skick: ${ad.condition}</p>
-        <p class="meta-small">Upplagd: ${ad.date}</p>
-    </div>
-    `).join('');
-
-    // Klickbar annons (modal)
-    document.querySelectorAll('.ad-card').forEach(card=>{
-        card.addEventListener('click',()=>{
-            const ad = ads.find(a=>a.id===card.dataset.id);
-            document.getElementById('modal-title').innerText = ad.title;
-            document.getElementById('modal-description').innerText = ad.description;
-            document.getElementById('modal-price').innerText = ad.price;
-            document.getElementById('modal-category').innerText = ad.category;
-            document.getElementById('modal-condition').innerText = ad.condition;
-            document.getElementById('modal-date').innerText = ad.date;
-            document.getElementById('modal-seller-email').innerText = ad.sellerEmail;
-            if(ad.image){ document.getElementById('modal-image').src=ad.image; document.getElementById('modal-image').style.display='block'; }
-            else document.getElementById('modal-image').style.display='none';
-            document.getElementById('modal-overlay').style.display='flex';
-        });
-    });
-}
-
-// Stäng modal
-document.getElementById('modal-close').addEventListener('click', ()=>{
-    document.getElementById('modal-overlay').style.display='none';
-});
-
-// Lägg till annons
-document.getElementById('ad-form').addEventListener('submit', async function(e){
-    e.preventDefault();
-    if(!loggedInUser){ alert('Du måste logga in'); return; }
-
-    const data = {
-        title: document.getElementById('title').value,
-        description: document.getElementById('description').value,
-        price: document.getElementById('price').value,
-        category: document.getElementById('category').value,
-        condition: document.getElementById('condition').value,
-        sellerEmail: document.getElementById('seller-email').value,
-        image: null
-    };
-
-    await fetch('/api/ad', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
-    });
-
-    fetchAds();
-    document.getElementById('ad-form').reset();
-});
-
-// Initial fetch
-fetchAds();
 </script>
 </body>
 </html>
+
 
 
 
