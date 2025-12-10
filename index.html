@@ -26,6 +26,14 @@ main { padding:20px; max-width:1200px; margin:0 auto; }
 .ad-card img { max-width:100%; height:auto; border-radius:4px; }
 .meta-small { font-size:12px; color:#666; margin-top:6px; }
 .remove-btn { position:absolute; top:5px; right:5px; background:#ff4d4d; color:white; border:none; border-radius:4px; padding:2px 6px; cursor:pointer; font-size:12px; }
+
+/* Modal */
+.modal-overlay { position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); display:none; align-items:flex-start; justify-content:center; padding:20px; z-index:9999; overflow-y:auto; }
+.modal { background:white; width:100%; max-width:900px; border-radius:8px; margin:40px 0; box-shadow:0 10px 30px rgba(0,0,0,0.3); position:relative; overflow:hidden; }
+.modal .modal-header { display:flex; justify-content:space-between; align-items:center; padding:12px 16px; border-bottom:1px solid #eee; }
+.modal .modal-body { padding:16px; display:block; }
+.modal img.modal-image { width:100%; height:auto; border-radius:4px; display:block; margin-bottom:12px; }
+.modal .close-btn { background:transparent; border:none; font-size:20px; cursor:pointer; }
 </style>
 </head>
 <body>
@@ -34,9 +42,9 @@ main { padding:20px; max-width:1200px; margin:0 auto; }
 <nav>
 <button id="nav-home">Startsida</button>
 <button id="nav-ads">Publicerade annonser</button>
-<button id="show-add-btn">Lägg till annons</button>
 <a href="login.html">Logga in</a>
 <a href="register.html">Registrera</a>
+<button id="show-add-btn">Lägg till annons</button>
 </nav>
 </header>
 
@@ -75,39 +83,95 @@ main { padding:20px; max-width:1200px; margin:0 auto; }
 
 <section id="ads">
 <h2>Alla annonser</h2>
-<div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:10px;">
-    <select id="filter-category">
-        <option value="">Alla kategorier</option>
-        <option value="elektronik">Elektronik</option>
-        <option value="kläder">Kläder</option>
-        <option value="möbler">Möbler</option>
-        <option value="övrigt">Övrigt</option>
-    </select>
-    <select id="sort-ads">
-        <option value="newest">Nyast först</option>
-        <option value="oldest">Äldst först</option>
-        <option value="price-asc">Pris stigande</option>
-        <option value="price-desc">Pris fallande</option>
-    </select>
-</div>
 <div id="ad-list"></div>
 </section>
 </main>
 
+<!-- Modal -->
+<div class="modal-overlay" id="modal-overlay">
+<div class="modal">
+<div class="modal-header">
+<h3 id="modal-title"></h3>
+<button class="close-btn" id="modal-close">&times;</button>
+</div>
+<div class="modal-body">
+<img id="modal-image" class="modal-image" src="">
+<p>Pris: <span id="modal-price"></span> SEK</p>
+<p>Kategori: <span id="modal-category"></span></p>
+<p>Skick: <span id="modal-condition"></span></p>
+<p>Upplagd: <span id="modal-date"></span></p>
+<p id="modal-description"></p>
+<p>Säljarens email: <span id="modal-seller-email"></span></p>
+<button class="remove-btn" id="remove-ad-btn" style="display:none;">Ta bort annons</button>
+</div>
+</div>
+</div>
+
 <script>
-// Visa "lägg till annons"-form
+// Dummy ads-data om man inte har backend
+let ads = [];
+
+// Scroll-knappar
+document.getElementById('nav-home').addEventListener('click', ()=>{ document.getElementById('start-page').scrollIntoView({behavior:'smooth'}); });
+document.getElementById('nav-ads').addEventListener('click', ()=>{ document.getElementById('ads').scrollIntoView({behavior:'smooth'}); });
 document.getElementById('show-add-btn').addEventListener('click', ()=>{
-    document.getElementById('add-ad').style.display='block';
-    document.getElementById('add-ad').scrollIntoView({behavior:"smooth"});
+    const form = document.getElementById('add-ad');
+    form.style.display = form.style.display==='block' ? 'none' : 'block';
+    if(form.style.display==='block') form.scrollIntoView({behavior:'smooth'});
 });
 
-// Scrolla till annonser
-document.getElementById('nav-ads').addEventListener('click', ()=>{
-    document.getElementById('ads').scrollIntoView({behavior:'smooth'});
+// Render ads
+function renderAds(){
+    const adList = document.getElementById('ad-list');
+    adList.innerHTML = ads.map((ad,index)=>`
+        <div class="ad-card">
+            ${ad.image ? `<img src="${ad.image}" alt="${ad.title}">` : '<div style="height:150px;background:#eee;display:flex;align-items:center;justify-content:center;">Ingen bild</div>'}
+            <h3>${ad.title}</h3>
+            <p>${ad.description}</p>
+            <p>Pris: ${ad.price} SEK</p>
+            <p>Kategori: ${ad.category}</p>
+            <p>Skick: ${ad.condition}</p>
+            <p class="meta-small">Upplagd: ${ad.date}</p>
+        </div>
+    `).join('');
+}
+
+// Lägg till annons
+document.getElementById('ad-form').addEventListener('submit', function(e){
+    e.preventDefault();
+    const newAd = {
+        title: document.getElementById('title').value,
+        description: document.getElementById('description').value,
+        price: document.getElementById('price').value,
+        category: document.getElementById('category').value,
+        condition: document.getElementById('condition').value,
+        sellerEmail: document.getElementById('seller-email').value,
+        date: new Date().toLocaleString(),
+        image: null
+    };
+    const imageInput = document.getElementById('image');
+    if(imageInput.files && imageInput.files[0]){
+        const reader = new FileReader();
+        reader.onload = function(e){
+            newAd.image = e.target.result;
+            ads.push(newAd);
+            renderAds();
+            document.getElementById('ad-form').reset();
+        };
+        reader.readAsDataURL(imageInput.files[0]);
+    } else {
+        ads.push(newAd);
+        renderAds();
+        document.getElementById('ad-form').reset();
+    }
 });
+
+// Initial render
+renderAds();
 </script>
 </body>
 </html>
+
 
 
 
