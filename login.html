@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Marknad24 - Logga in</title>
+<style>
+body { font-family: Arial, sans-serif; background:#f4f4f4; margin:0; padding:0; display:flex; justify-content:center; align-items:center; height:100vh; }
+.auth-container { background:#fff; padding:40px; border-radius:10px; box-shadow:0 0 15px rgba(0,0,0,0.2); width:100%; max-width:400px; }
+h2 { text-align:center; margin-bottom:20px; color:#007bff; }
+input { width:100%; padding:12px; margin-bottom:15px; border:1px solid #ccc; border-radius:5px; }
+button { width:100%; padding:12px; background:#007bff; color:white; border:none; border-radius:5px; cursor:pointer; font-size:16px; }
+button:hover { background:#0062cc; }
+.switch-auth { margin-top:10px; display:block; text-align:center; background:transparent; border:none; color:#007bff; cursor:pointer; }
+.auth-status { margin-top:10px; text-align:center; font-weight:bold; }
+.auth-status.error { color:red; }
+.auth-status.success { color:green; }
+</style>
+</head>
+<body>
+
+<div class="auth-container">
+<h2 id="auth-title">Logga in</h2>
+<input type="text" id="auth-name" placeholder="Namn" style="display:none;">
+<input type="email" id="auth-email" placeholder="Email">
+<input type="text" id="auth-mobile" placeholder="Mobil" style="display:none;">
+<input type="password" id="auth-password" placeholder="Lösenord">
+<button id="auth-submit">Logga in</button>
+<button class="switch-auth" id="switch-auth-btn">Registrera ny användare</button>
+<div class="auth-status" id="auth-status"></div>
+</div>
+
+<script>
+// Hämta användare
+let users = JSON.parse(localStorage.getItem('users')) || [];
+let loggedInUserId = localStorage.getItem('loggedInUser') || null;
+
+// Skapa admin om inte finns
+if(!users.some(u=>u.email==='admin')){
+    users.push({id:'admin_1', name:'Admin', mobile:'000', email:'admin', password:'123456', isAdmin:true});
+    localStorage.setItem('users', JSON.stringify(users));
+}
+
+// Element
+const authTitle = document.getElementById('auth-title');
+const authName = document.getElementById('auth-name');
+const authEmail = document.getElementById('auth-email');
+const authMobile = document.getElementById('auth-mobile');
+const authPassword = document.getElementById('auth-password');
+const authSubmit = document.getElementById('auth-submit');
+const authStatus = document.getElementById('auth-status');
+const switchAuthBtn = document.getElementById('switch-auth-btn');
+
+let isRegister = false;
+
+// Byt mellan login och registrering
+switchAuthBtn.addEventListener('click', ()=>{
+    isRegister = !isRegister;
+    if(isRegister){
+        authTitle.innerText='Registrera ny användare';
+        authName.style.display='block';
+        authMobile.style.display='block';
+        authSubmit.innerText='Registrera';
+    } else {
+        authTitle.innerText='Logga in';
+        authName.style.display='none';
+        authMobile.style.display='none';
+        authSubmit.innerText='Logga in';
+    }
+    authStatus.innerText='';
+});
+
+// Submit login / register
+authSubmit.addEventListener('click', ()=>{
+    const name = authName.value.trim();
+    const email = authEmail.value.trim();
+    const mobile = authMobile.value.trim();
+    const password = authPassword.value.trim();
+
+    if(isRegister){
+        if(!name || !email || !mobile || !password){ authStatus.innerText='Fyll i alla fält!'; authStatus.className='auth-status error'; return; }
+        if(users.some(u=>u.email===email)){ authStatus.innerText='Email finns redan!'; authStatus.className='auth-status error'; return; }
+        const id='user_'+Date.now();
+        users.push({id,name,email,mobile,password,isAdmin:false});
+        localStorage.setItem('users', JSON.stringify(users));
+        authStatus.innerText='Registrering lyckad! Logga in nu.'; authStatus.className='auth-status success';
+        isRegister=false; authTitle.innerText='Logga in'; authName.style.display='none'; authMobile.style.display='none'; authSubmit.innerText='Logga in';
+    } else {
+        const user = users.find(u=>u.email===email && u.password===password);
+        if(user){
+            loggedInUserId = user.id;
+            localStorage.setItem('loggedInUser', loggedInUserId);
+            authStatus.innerText='Inloggning lyckad! Omdirigerar...'; authStatus.className='auth-status success';
+            setTimeout(()=>{ window.location.href='index.html'; },1000);
+        } else {
+            authStatus.innerText='Fel email eller lösenord!'; authStatus.className='auth-status error';
+        }
+    }
+});
+</script>
+
+</body>
+</html>

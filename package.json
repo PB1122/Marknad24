@@ -1,0 +1,9 @@
+{
+  "name": "marknad24",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {},
+  "scripts": {
+    "dev": "vercel dev"
+  }
+}
