@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+    <meta charset="UTF-8">
+    <title>Alla annonser</title>
+</head>
+<body>
+
+<h2>Alla annonser</h2>
+
+<div id="adsList">Laddar annonser...</div>
+
+<script>
+async function loadAds() {
+    const res = await fetch("/api/ads");
+    const ads = await res.json();
+
+    console.log("Ads loaded:", ads);
+
+    if (ads.length === 0) {
+        document.getElementById("adsList").innerHTML = "<p>Inga annonser ännu.</p>";
+        return;
+    }
+
+    document.getElementById("adsList").innerHTML = ads
+        .map(a => `
+            <div style="border:1px solid #ccc; padding:10px; margin:10px;">
+                <h3>${a.title}</h3>
+                <p>${a.desc}</p>
+                <strong>${a.price} kr</strong>
+            </div>
+        `)
+        .join("");
+}
+
+loadAds();
+</script>
+
+</body>
+</html>

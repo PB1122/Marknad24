@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+    <meta charset="UTF-8">
+    <title>Lägg in annons</title>
+</head>
+<body>
+
+<h2>Lägg in ny annons</h2>
+
+<form id="adForm">
+    <label>Titel:</label><br>
+    <input type="text" id="title" required><br><br>
+
+    <label>Pris:</label><br>
+    <input type="text" id="price" required><br><br>
+
+    <label>Beskrivning:</label><br>
+    <textarea id="desc" required></textarea><br><br>
+
+    <button type="submit">Lägg in annons</button>
+</form>
+
+<script>
+document.getElementById("adForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    const newAd = {
+        title: document.getElementById("title").value,
+        price: document.getElementById("price").value,
+        desc: document.getElementById("desc").value
+    };
+
+    const res = await fetch("/api/ads", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newAd)
+    });
+
+    if (res.ok) {
+        alert("Annons tillagd!");
+        window.location.href = "ads.html";
+    } else {
+        alert("Fel: kunde inte lägga till annons.");
+    }
+});
+</script>
+
+</body>
+</html>
