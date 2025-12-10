@@ -42,7 +42,6 @@ main { padding:20px; max-width:1200px; margin:0 auto; }
 <nav>
 <button id="nav-home">Startsida</button>
 <button id="nav-ads">Publicerade annonser</button>
-<a href="login.html">Logga in</a>
 <button id="show-add-btn">Lägg till annons</button>
 </nav>
 </header>
@@ -74,7 +73,6 @@ main { padding:20px; max-width:1200px; margin:0 auto; }
 <option value="Okej skick">Okej skick</option>
 <option value="Använt skick">Använt skick</option>
 </select>
-<input type="file" id="image" accept="image/*">
 <input type="email" id="seller-email" placeholder="Din email" required>
 <button type="submit">Lägg upp</button>
 </form>
@@ -82,21 +80,6 @@ main { padding:20px; max-width:1200px; margin:0 auto; }
 
 <section id="ads">
 <h2>Alla annonser</h2>
-<div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:10px;">
-    <select id="filter-category">
-        <option value="">Alla kategorier</option>
-        <option value="elektronik">Elektronik</option>
-        <option value="kläder">Kläder</option>
-        <option value="möbler">Möbler</option>
-        <option value="övrigt">Övrigt</option>
-    </select>
-    <select id="sort-ads">
-        <option value="newest">Nyast först</option>
-        <option value="oldest">Äldst först</option>
-        <option value="price-asc">Pris stigande</option>
-        <option value="price-desc">Pris fallande</option>
-    </select>
-</div>
 <div id="ad-list"></div>
 </section>
 </main>
@@ -116,64 +99,51 @@ main { padding:20px; max-width:1200px; margin:0 auto; }
 <p>Upplagd: <span id="modal-date"></span></p>
 <p id="modal-description"></p>
 <p>Säljarens email: <span id="modal-seller-email"></span></p>
-<button class="remove-btn" id="remove-ad-btn" style="display:none;">Ta bort annons</button>
 </div>
 </div>
 </div>
 
 <script>
-let loggedInUserId = localStorage.getItem('loggedInUser') || null;
+// LOGIC
+let loggedInUser = true; // simulerar inloggning
 
 // Visa "lägg till annons"-form
-document.getElementById('show-add-btn').addEventListener('click', ()=> {
+document.getElementById('show-add-btn').addEventListener('click', ()=>{
     document.getElementById('add-ad').style.display='block';
     document.getElementById('add-ad').scrollIntoView({behavior:"smooth"});
 });
 
 // Scrolla till annonser
-document.getElementById('nav-ads').addEventListener('click', ()=> {
+document.getElementById('nav-ads').addEventListener('click', ()=>{
     document.getElementById('ads').scrollIntoView({behavior:'smooth'});
 });
 
-// RENDER ADS
-async function renderAds(){
+// Hämta annonser
+async function fetchAds(){
     const res = await fetch('/api/ad');
-    let ads = await res.json();
+    const ads = await res.json();
+    renderAds(ads);
+}
 
+// Render-funktion
+function renderAds(ads){
     const adList = document.getElementById('ad-list');
-    const selectedCategory = document.getElementById('filter-category')?.value || '';
-    const sortValue = document.getElementById('sort-ads')?.value || 'newest';
-
-    // Filter
-    if(selectedCategory) ads = ads.filter(ad=>ad.category===selectedCategory);
-
-    // Sort
-    ads.sort((a,b)=>{
-        if(sortValue==='newest') return new Date(b.date)-new Date(a.date);
-        if(sortValue==='oldest') return new Date(a.date)-new Date(b.date);
-        if(sortValue==='price-asc') return Number(a.price)-Number(b.price);
-        if(sortValue==='price-desc') return Number(b.price)-Number(a.price);
-    });
-
     adList.innerHTML = ads.map(ad=>`
-        <div class="ad-card" data-id="${ad.id}">
-            ${ad.image ? `<img src="${ad.image}" alt="${ad.title}">` : '<div style="height:150px;background:#eee;display:flex;align-items:center;justify-content:center;">Ingen bild</div>'}
-            <h3>${ad.title}</h3>
-            <p>${ad.description}</p>
-            <p>Pris: ${ad.price} SEK</p>
-            <p>Kategori: ${ad.category}</p>
-            <p>Skick: ${ad.condition}</p>
-            <p class="meta-small">Upplagd: ${ad.date}</p>
-        </div>
+    <div class="ad-card" data-id="${ad.id}">
+        ${ad.image ? `<img src="${ad.image}" alt="${ad.title}">` : '<div style="height:150px;background:#eee;display:flex;align-items:center;justify-content:center;">Ingen bild</div>'}
+        <h3>${ad.title}</h3>
+        <p>${ad.description}</p>
+        <p>Pris: ${ad.price} SEK</p>
+        <p>Kategori: ${ad.category}</p>
+        <p>Skick: ${ad.condition}</p>
+        <p class="meta-small">Upplagd: ${ad.date}</p>
+    </div>
     `).join('');
 
     // Klickbar annons (modal)
-    document.querySelectorAll('.ad-card').forEach((card,index)=>{
-        card.addEventListener('click', async ()=>{
-            const res = await fetch('/api/ad');
-            const ads = await res.json();
-            const ad = ads[index];
-
+    document.querySelectorAll('.ad-card').forEach(card=>{
+        card.addEventListener('click',()=>{
+            const ad = ads.find(a=>a.id===card.dataset.id);
             document.getElementById('modal-title').innerText = ad.title;
             document.getElementById('modal-description').innerText = ad.description;
             document.getElementById('modal-price').innerText = ad.price;
@@ -183,7 +153,6 @@ async function renderAds(){
             document.getElementById('modal-seller-email').innerText = ad.sellerEmail;
             if(ad.image){ document.getElementById('modal-image').src=ad.image; document.getElementById('modal-image').style.display='block'; }
             else document.getElementById('modal-image').style.display='none';
-
             document.getElementById('modal-overlay').style.display='flex';
         });
     });
@@ -194,54 +163,37 @@ document.getElementById('modal-close').addEventListener('click', ()=>{
     document.getElementById('modal-overlay').style.display='none';
 });
 
-// ADD AD
+// Lägg till annons
 document.getElementById('ad-form').addEventListener('submit', async function(e){
     e.preventDefault();
-    if(!loggedInUserId){ alert('Du måste logga in för att lägga upp annons'); return; }
+    if(!loggedInUser){ alert('Du måste logga in'); return; }
 
-    const title = document.getElementById('title').value;
-    const description = document.getElementById('description').value;
-    const price = document.getElementById('price').value;
-    const category = document.getElementById('category').value;
-    const condition = document.getElementById('condition').value;
-    const sellerEmail = document.getElementById('seller-email').value;
-    const imageInput = document.getElementById('image');
+    const data = {
+        title: document.getElementById('title').value,
+        description: document.getElementById('description').value,
+        price: document.getElementById('price').value,
+        category: document.getElementById('category').value,
+        condition: document.getElementById('condition').value,
+        sellerEmail: document.getElementById('seller-email').value,
+        image: null
+    };
 
-    let newAd = { title, description, price, category, condition, sellerEmail, image:null };
+    await fetch('/api/ad', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+    });
 
-    if(imageInput.files && imageInput.files[0]){
-        const reader = new FileReader();
-        reader.onload = async function(e){
-            newAd.image = e.target.result;
-            await fetch('/api/ad', {
-                method:'POST',
-                headers:{'Content-Type':'application/json'},
-                body: JSON.stringify(newAd)
-            });
-            renderAds();
-            document.getElementById('ad-form').reset();
-        };
-        reader.readAsDataURL(imageInput.files[0]);
-    } else {
-        await fetch('/api/ad', {
-            method:'POST',
-            headers:{'Content-Type':'application/json'},
-            body: JSON.stringify(newAd)
-        });
-        renderAds();
-        document.getElementById('ad-form').reset();
-    }
+    fetchAds();
+    document.getElementById('ad-form').reset();
 });
 
-// FILTER & SORT
-document.getElementById('filter-category').addEventListener('change', renderAds);
-document.getElementById('sort-ads').addEventListener('change', renderAds);
-
-// INITIAL
-renderAds();
+// Initial fetch
+fetchAds();
 </script>
 </body>
 </html>
+
 
 
 
