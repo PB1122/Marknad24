@@ -1,32 +1,38 @@
 const express = require('express');
-const fs = require('fs');
 const path = require('path');
-const bodyParser = require('body-parser');
+const fs = require('fs');
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Middleware
-app.use(bodyParser.json());
-app.use(express.static('public'));
+// Låt Express servera alla filer i public-mappen
+app.use(express.static(path.join(__dirname, 'public')));
 
-// Hämta annonser
-app.get('/api/ads', (req, res) => {
-    const ads = JSON.parse(fs.readFileSync('ads.json'));
-    res.json(ads);
+// API för annonser
+app.use(express.json());
+const adsFile = path.join(__dirname, 'ads.json');
+
+app.get('/ads', (req, res) => {
+  if (!fs.existsSync(adsFile)) {
+    fs.writeFileSync(adsFile, JSON.stringify([]));
+  }
+  const ads = JSON.parse(fs.readFileSync(adsFile));
+  res.json(ads);
 });
 
-// Lägg till annons
-app.post('/api/ads', (req, res) => {
-    const ads = JSON.parse(fs.readFileSync('ads.json'));
-    const newAd = req.body;
-    newAd.id = 'ad_' + Date.now();
-    newAd.date = new Date().toLocaleString();
-    ads.push(newAd);
-    fs.writeFileSync('ads.json', JSON.stringify(ads, null, 2));
-    res.json({ success: true, ad: newAd });
+app.post('/ads', (req, res) => {
+  const ads = fs.existsSync(adsFile) ? JSON.parse(fs.readFileSync(adsFile)) : [];
+  const newAd = { ...req.body, id: 'ad_' + Date.now(), date: new Date().toLocaleString() };
+  ads.push(newAd);
+  fs.writeFileSync(adsFile, JSON.stringify(ads, null, 2));
+  res.status(201).json(newAd);
 });
 
+// Om ingen annan route matchar, skicka index.html
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
+// Starta server
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
-
-
 
