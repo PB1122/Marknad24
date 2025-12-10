@@ -1,32 +1,39 @@
-const express = require('express');
-const fs = require('fs');
-const path = require('path');
+import express from "express";
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 const app = express();
-const port = process.env.PORT || 3000;
-
 app.use(express.json());
-app.use(express.static('public'));
 
-// GET annonser
-app.get('/api/ads', (req, res) => {
-    const filePath = path.join(__dirname, 'api', 'ads.json');
-    if (!fs.existsSync(filePath)) return res.json([]);
-    const ads = JSON.parse(fs.readFileSync(filePath));
+// Public folder
+app.use(express.static(path.join(__dirname, "public")));
+
+// READ ads
+app.get("/api/ads", (req, res) => {
+    const ads = JSON.parse(fs.readFileSync("./api/ads.json"));
     res.json(ads);
 });
 
-// POST ny annons
-app.post('/api/ads', (req, res) => {
-    const newAd = req.body;
-    const filePath = path.join(__dirname, 'api', 'ads.json');
-    let ads = [];
-    if (fs.existsSync(filePath)) {
-        ads = JSON.parse(fs.readFileSync(filePath));
-    }
+// ADD ad
+app.post("/api/ads", (req, res) => {
+    const ads = JSON.parse(fs.readFileSync("./api/ads.json"));
+    
+    const newAd = {
+        id: Date.now(),
+        ...req.body
+    };
+
     ads.push(newAd);
-    fs.writeFileSync(filePath, JSON.stringify(ads, null, 2));
-    res.json({ success: true });
+    fs.writeFileSync("./api/ads.json", JSON.stringify(ads, null, 2));
+
+    res.json({ status: "ok", ad: newAd });
 });
 
-app.listen(port, () => console.log(`Server kör på port ${port}`));
+// Start server
+app.listen(3000, () => console.log("Server running on port 3000"));
+
 
