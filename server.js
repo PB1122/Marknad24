@@ -1,39 +1,32 @@
-import express from "express";
-import fs from "fs";
-import path from "path";
-import { fileURLToPath } from "url";
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
+const express = require('express');
+const fs = require('fs');
+const path = require('path');
+const bodyParser = require('body-parser');
 const app = express();
-app.use(express.json());
+const PORT = process.env.PORT || 3000;
 
-// Public folder
-app.use(express.static(path.join(__dirname, "public")));
+// Middleware
+app.use(bodyParser.json());
+app.use(express.static('public'));
 
-// READ ads
-app.get("/api/ads", (req, res) => {
-    const ads = JSON.parse(fs.readFileSync("./api/ads.json"));
+// Hämta annonser
+app.get('/api/ads', (req, res) => {
+    const ads = JSON.parse(fs.readFileSync('ads.json'));
     res.json(ads);
 });
 
-// ADD ad
-app.post("/api/ads", (req, res) => {
-    const ads = JSON.parse(fs.readFileSync("./api/ads.json"));
-    
-    const newAd = {
-        id: Date.now(),
-        ...req.body
-    };
-
+// Lägg till annons
+app.post('/api/ads', (req, res) => {
+    const ads = JSON.parse(fs.readFileSync('ads.json'));
+    const newAd = req.body;
+    newAd.id = 'ad_' + Date.now();
+    newAd.date = new Date().toLocaleString();
     ads.push(newAd);
-    fs.writeFileSync("./api/ads.json", JSON.stringify(ads, null, 2));
-
-    res.json({ status: "ok", ad: newAd });
+    fs.writeFileSync('ads.json', JSON.stringify(ads, null, 2));
+    res.json({ success: true, ad: newAd });
 });
 
-// Start server
-app.listen(3000, () => console.log("Server running on port 3000"));
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+
 
 
