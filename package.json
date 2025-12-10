@@ -1,9 +1,11 @@
 {
   "name": "marknad24",
   "version": "1.0.0",
-  "private": true,
-  "dependencies": {},
+  "main": "server.js",
   "scripts": {
-    "dev": "vercel dev"
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2"
   }
 }
